@@ -27,7 +27,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <span class="font-bold text-lg text-white tracking-wide">SECURE-IAM</span>
-                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs px-2 py-0.5 rounded font-mono">Enterprise v5.1 Pro</span>
+                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs px-2 py-0.5 rounded font-mono">Enterprise v5.2 Pro</span>
                 </div>
                 <p class="text-xs text-slate-400">차세대 계정·권한 거버넌스 & Zero-Trust 오케스트레이션 콘솔</p>
             </div>
@@ -82,7 +82,7 @@
                         <button onclick="openAddEmployeeModal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs py-2 rounded font-medium transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-user-plus"></i> + 신규 직원 등록
                         </button>
-                        <button onclick="triggerExternalAttack()" class="w-full bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-300 text-xs py-2 rounded font-medium transition flex items-center justify-center gap-2">
+                        <button onclick="triggerQuickAttack()" class="w-full bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-300 text-xs py-2 rounded font-medium transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-bug"></i> [시연] 외부 IP 해킹 시도
                         </button>
                     </div>
@@ -186,37 +186,113 @@
 
             <!-- TAB 3: AI AGENT -->
             <section id="tab-ai-agent" class="tab-content hidden space-y-6">
-                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                    <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-robot text-purple-400"></i> AI 에이전트 자율 탈퇴 & 증적 캡처 (Shadow SaaS)
-                    </h1>
-                    <p class="text-xs text-slate-400 mb-4">공식 API가 없는 외부 포털 및 서드파티 웹사이트도 AI 에이전트가 직접 들어가 멤버를 탈퇴시키고 증적 스크린샷을 생성합니다.</p>
-                    
-                    <button onclick="runAIAgentSimulation()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
-                        <i class="fa-solid fa-play"></i> AI 탈퇴 자동화 실행 (네이버 서치어드바이저 / 페이스북 비즈니스)
-                    </button>
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-4">
+                    <div>
+                        <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-robot text-purple-400"></i> AI 에이전트 자율 탈퇴 & 증적 캡처 (Shadow SaaS)
+                        </h1>
+                        <p class="text-xs text-slate-400">공식 API가 없는 외부 포털 및 서드파티 웹사이트도 AI 에이전트가 직접 들어가 멤버를 탈퇴시키고 증적 스크린샷을 생성합니다.</p>
+                    </div>
+
+                    <!-- Interactive Controls -->
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 grid grid-cols-3 gap-3 items-end">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">대상 퇴사자/직원 선택</label>
+                            <select id="aiSelectEmployee" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">미연동 SaaS/포털 선택</label>
+                            <select id="aiSelectTargetApp" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                                <option value="네이버 서치어드바이저 (마케팅 권한)">네이버 서치어드바이저</option>
+                                <option value="페이스북 비즈니스 메니저">페이스북 비즈니스 계정</option>
+                                <option value="크몽 마케팅 아웃소싱 포털">크몽 외주 관리 포털</option>
+                            </select>
+                        </div>
+                        <button onclick="startInteractiveAIAgent()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> AI 자율 탈퇴 시뮬레이션 가동
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="aiProgressBox" class="hidden space-y-1">
+                        <div class="flex justify-between text-xs font-mono text-purple-300">
+                            <span id="aiProgressText">Headless Browser 초기화 중...</span>
+                            <span id="aiProgressPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div id="aiProgressBar" class="bg-purple-600 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="aiTimeline" class="space-y-4">
-                    <!-- Dynamic Log -->
+                <!-- Execution Terminal Logs -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h2 class="text-xs font-bold text-slate-400 font-mono flex items-center justify-between">
+                        <span><i class="fa-solid fa-terminal text-purple-400"></i> AI AGENT RUNTIME EXECUTION TERMINAL LOG</span>
+                        <span class="text-slate-600">Status: Idle</span>
+                    </h2>
+                    <div id="aiTerminalLog" class="font-mono text-xs text-slate-400 space-y-1 bg-slate-900 p-3 rounded border border-slate-800 min-h-[160px] max-h-[200px] overflow-y-auto">
+                        <p class="text-slate-600">> Ready for automated revocation agent execution...</p>
+                    </div>
+                </div>
+
+                <!-- Generated Evidence Report Card -->
+                <div id="aiEvidenceCard" class="hidden bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-xl text-xs space-y-3">
+                    <div class="flex justify-between items-center">
+                        <p class="font-bold text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-base"></i> AI 자율 탈퇴 완료 및 법적 증적 스크린샷 적재 성공
+                        </p>
+                        <button onclick="openEvidenceModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-semibold transition">
+                            <i class="fa-solid fa-image"></i> 생성된 증적 스크린샷 레포트 보기
+                        </button>
+                    </div>
                 </div>
             </section>
 
             <!-- TAB 4: NETWORK -->
             <section id="tab-network" class="tab-content hidden space-y-6">
-                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                    <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-shield-cat text-rose-400"></i> Zero-Trust 외부 IP 바인딩 및 접속 차단
-                    </h1>
-                    <p class="text-xs text-slate-400 mb-4">허용된 사내 바인딩 IP가 아닌 외부/해외 IP로 접근 시 즉시 차단 처리됩니다.</p>
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-4">
+                    <div>
+                        <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-cat text-rose-400"></i> Zero-Trust 외부 IP 바인딩 및 접속 차단
+                        </h1>
+                        <p class="text-xs text-slate-400">허용된 사내 바인딩 IP가 아닌 외부/해외 IP로 접근 시 즉시 차단 처리됩니다.</p>
+                    </div>
 
-                    <button onclick="triggerExternalAttack()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
-                        <i class="fa-solid fa-user-ninja"></i> [시연] 비인가 외부 IP 해킹 시도 테스트
-                    </button>
+                    <!-- Interactive Controls for Network Simulation -->
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 grid grid-cols-3 gap-3 items-end">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">접속 시도 유저 선택</label>
+                            <select id="netSelectUser" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">시도 IP 환경 선택</label>
+                            <select id="netSelectIpType" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500">
+                                <option value="ALLOWED">허용된 사내 바인딩 IP 시도 (정상)</option>
+                                <option value="BLOCKED_TOR">해외 Tor 악성 VPN IP 시도 (185.220.101.5)</option>
+                                <option value="BLOCKED_UNKNOWN">미인가 외부 집 IP 시도 (211.200.15.88)</option>
+                            </select>
+                        </div>
+                        <button onclick="runNetworkSecurityTest()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-network-wired"></i> Zero-Trust 패킷 검증 테스트 실행
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inspection Result Panel -->
+                <div id="netResultPanel" class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <h2 class="text-sm font-bold text-slate-200 mb-3">Zero-Trust 실시간 패킷 검증 결과 & 로그</h2>
+                    <div id="netResultContent" class="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-xs text-slate-500 min-h-[80px] flex items-center justify-center">
+                        테스트를 실행하면 실시간 IP 검증 및 차단 패킷 내역이 이곳에 표시됩니다.
+                    </div>
                 </div>
 
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <h2 class="text-sm font-bold text-slate-200 mb-3">실시간 외부 IP 차단 로그</h2>
+                    <h2 class="text-sm font-bold text-slate-200 mb-3">누적 차단 감사 로그 (Audit Trail)</h2>
                     <div id="blockedIpLogs" class="space-y-2 font-mono text-xs">
                         <!-- Dynamic Logs -->
                     </div>
@@ -239,6 +315,33 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- MODAL: EVIDENCE SCREENSHOT DISPLAY -->
+    <div id="evidenceModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice text-emerald-400"></i> AI 에이전트 자율 탈퇴 법적 증적 스크린샷
+                </h3>
+                <button onclick="toggleModal('evidenceModal', false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="bg-slate-950 p-4 rounded border border-slate-800 space-y-3">
+                <div class="bg-slate-900 border border-emerald-500/30 p-4 rounded text-center space-y-2 font-mono">
+                    <div class="text-emerald-400 text-3xl"><i class="fa-solid fa-shield-check"></i></div>
+                    <p class="text-white font-bold text-sm">SECURE-IAM AUTOMATED AGENT EVIDENCE</p>
+                    <p class="text-xs text-slate-400" id="evidenceModalText">Target App: Naver Search Advisor | User: yh_kim@company.com</p>
+                    <div class="bg-slate-950 p-3 rounded text-left text-[11px] text-slate-300 space-y-1 border border-slate-800">
+                        <p><strong class="text-emerald-400">Status:</strong> REVOCATION SUCCESSFUL (200 OK)</p>
+                        <p><strong class="text-emerald-400">Hash Checksum:</strong> e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</p>
+                        <p><strong class="text-emerald-400">Timestamp:</strong> <span id="evidenceModalTime"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <button onclick="toggleModal('evidenceModal', false)" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2 rounded">닫기</button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL: ADD EMPLOYEE -->
@@ -402,7 +505,7 @@
                 apps: ["Google Workspace", "GitHub", "AWS Portal"],
                 revokedApps: [],
                 jwtKey: "JWT-PROD-DEV-881",
-                status: "ACTIVE", // ACTIVE, TERMINATED
+                status: "ACTIVE",
                 scheduledSeconds: null
             },
             {
@@ -430,6 +533,7 @@
         let currentOtpCode = "";
         let selectedEmpId = null;
         let activeIntervals = {};
+        let lastEvidenceInfo = null;
 
         // DB Operations
         function getEmployees() {
@@ -469,6 +573,23 @@
             const activeNav = document.getElementById(`nav-${tabId}`);
             if (activeNav) {
                 activeNav.classList.add('active', 'text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+            }
+            populateSelectOptions();
+        }
+
+        function populateSelectOptions() {
+            const employees = getEmployees();
+            
+            // AI Select
+            const aiSelect = document.getElementById('aiSelectEmployee');
+            if (aiSelect) {
+                aiSelect.innerHTML = employees.map(e => `<option value="${e.id}">${e.name} (${e.email}) [${e.status}]</option>`).join('');
+            }
+
+            // Net Select
+            const netSelect = document.getElementById('netSelectUser');
+            if (netSelect) {
+                netSelect.innerHTML = employees.map(e => `<option value="${e.id}">${e.name} (바인딩: ${e.allowedIp})</option>`).join('');
             }
         }
 
@@ -692,41 +813,92 @@
             }, 600);
         }
 
-        // AI Agent Simulation
-        function runAIAgentSimulation() {
-            const timeline = document.getElementById('aiTimeline');
-            timeline.innerHTML = `
-                <div class="bg-slate-900 p-4 rounded-xl border border-purple-900/40 space-y-2">
-                    <p class="text-xs text-purple-400 font-bold"><i class="fa-solid fa-spinner animate-spin"></i> AI 에이전트가 API 미연동 웹사이트에 접속 중입니다...</p>
-                    <div class="text-[11px] font-mono text-slate-400 bg-slate-950 p-2 rounded border border-slate-800">
-                        > Launching Headless Chrome Browser...<br>
-                        > Navigating to https://searchadvisor.naver.com/members...<br>
-                        > Locating User 'yh_kim@company.com'...<br>
-                        > Clicking 'Revoke Admin Access' Button...<br>
-                        > Capturing Screen Evidence [evidence_20261020.png]...
-                    </div>
-                </div>
-            `;
+        // Interactive AI Agent Simulation
+        function startInteractiveAIAgent() {
+            const empId = document.getElementById('aiSelectEmployee').value;
+            const targetApp = document.getElementById('aiSelectTargetApp').value;
+            const emp = getEmployees().find(e => e.id === empId);
 
-            setTimeout(() => {
-                timeline.innerHTML += `
-                    <div class="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-xl text-xs space-y-2">
-                        <p class="font-bold text-emerald-400 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-check"></i> AI 자율 탈퇴 완료 및 증적 스크린샷 적재 성공
-                        </p>
-                        <div class="bg-slate-950 p-3 rounded border border-slate-800 flex items-center justify-between">
-                            <span class="font-mono text-slate-300">증적 파일: EVIDENCE_NAVER_SEARCHADVISOR_LOG.png</span>
-                            <span class="text-emerald-400 font-bold">감사 보고서 적재완료</span>
-                        </div>
-                    </div>
-                `;
-            }, 1200);
+            const progressBox = document.getElementById('aiProgressBox');
+            const progressBar = document.getElementById('aiProgressBar');
+            const progressPercent = document.getElementById('aiProgressPercent');
+            const progressText = document.getElementById('aiProgressText');
+            const terminalLog = document.getElementById('aiTerminalLog');
+            const evidenceCard = document.getElementById('aiEvidenceCard');
+
+            progressBox.classList.remove('hidden');
+            evidenceCard.classList.add('hidden');
+            terminalLog.innerHTML = `<p class="text-purple-400 font-bold">> [START] AI Revocation Agent Launched for User: ${emp.name} (${emp.email})</p>`;
+
+            const steps = [
+                { percent: 20, text: "Headless Chrome Virtual Browser Initializing...", log: `> Connecting to headless browser session...` },
+                { percent: 45, text: `Navigating to ${targetApp} Admin Panel...`, log: `> GET https://${targetApp.split(' ')[0]}.com/admin/members HTTP/1.1 200 OK` },
+                { percent: 70, text: `Locating user member '${emp.email}'...`, log: `> DOM Selector matched: input[value="${emp.email}"] -> Action: Click 'Revoke Access'` },
+                { percent: 90, text: `Revoking OAuth token and capturing screenshot evidence...`, log: `> Executing Admin Member Delete -> Capturing Page Screenshot...` },
+                { percent: 100, text: "Revocation Process Completed!", log: `> [SUCCESS] Account revoked on ${targetApp}. Evidence generated.` }
+            ];
+
+            let stepIdx = 0;
+            const interval = setInterval(() => {
+                if (stepIdx < steps.length) {
+                    const step = steps[stepIdx];
+                    progressBar.style.width = `${step.percent}%`;
+                    progressPercent.innerText = `${step.percent}%`;
+                    progressText.innerText = step.text;
+                    terminalLog.innerHTML += `<p class="text-slate-300">${step.log}</p>`;
+                    terminalLog.scrollTop = terminalLog.scrollHeight;
+                    stepIdx++;
+                } else {
+                    clearInterval(interval);
+                    lastEvidenceInfo = { empName: emp.name, email: emp.email, app: targetApp, time: new Date().toLocaleString() };
+                    evidenceCard.classList.remove('hidden');
+                }
+            }, 800);
         }
 
-        function triggerExternalAttack() {
-            addBlockedIp("185.220.101.5", "해외 Tor 악성 VPN 접근 시도");
+        function openEvidenceModal() {
+            if (!lastEvidenceInfo) return;
+            document.getElementById('evidenceModalText').innerText = `Target App: ${lastEvidenceInfo.app} | Target User: ${lastEvidenceInfo.empName} (${lastEvidenceInfo.email})`;
+            document.getElementById('evidenceModalTime').innerText = lastEvidenceInfo.time;
+            toggleModal('evidenceModal', true);
+        }
+
+        // Interactive Network Security Test
+        function runNetworkSecurityTest() {
+            const empId = document.getElementById('netSelectUser').value;
+            const ipType = document.getElementById('netSelectIpType').value;
+            const emp = getEmployees().find(e => e.id === empId);
+
+            const resultPanel = document.getElementById('netResultContent');
+            
+            if (ipType === 'ALLOWED') {
+                resultPanel.className = "bg-emerald-950/30 border border-emerald-500/40 p-4 rounded font-mono text-xs text-emerald-300 space-y-1 animate-pulse";
+                resultPanel.innerHTML = `
+                    <div class="font-bold text-sm text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> [200 OK] ACCESS GRANTED</div>
+                    <p>> 시도 유저: ${emp.name} (${emp.email})</p>
+                    <p>> 시도 IP: ${emp.allowedIp} (사내 바인딩 IP 화이트리스트 검증 통과)</p>
+                    <p>> Zero-Trust Policy: Normal Traffic Approved.</p>
+                `;
+            } else {
+                const blockedIp = ipType === 'BLOCKED_TOR' ? "185.220.101.5" : "211.200.15.88";
+                const reason = ipType === 'BLOCKED_TOR' ? "해외 Tor 악성 VPN 접근 시도" : "미인가 외부 IP 접근 시도";
+                
+                addBlockedIp(blockedIp, `${emp.name} 계정 도용 - ${reason}`);
+
+                resultPanel.className = "bg-rose-950/40 border border-rose-600/50 p-4 rounded font-mono text-xs text-rose-200 space-y-1 animate-pulse";
+                resultPanel.innerHTML = `
+                    <div class="font-bold text-sm text-rose-400 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> [403 FORBIDDEN] ZERO-TRUST ACCESS BLOCKED</div>
+                    <p>> 탈취 감지 계정: ${emp.name} (${emp.email})</p>
+                    <p>> 비인가 시도 IP: ${blockedIp} (${reason})</p>
+                    <p>> 허용된 사내 IP: ${emp.allowedIp}와 불일치 -> 즉시 세션 패킷 강제 차단 적재 완료!</p>
+                `;
+            }
+        }
+
+        function triggerQuickAttack() {
             switchTab('network');
-            alert("[SECURITY ALERT] 비인가 외부 IP (185.220.101.5) 접근 시도가 감지되어 Zero-Trust 엔진에 의해 차단되었습니다.");
+            document.getElementById('netSelectIpType').value = 'BLOCKED_TOR';
+            runNetworkSecurityTest();
         }
 
         function toggleModal(id, show) {
