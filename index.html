@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECURE-IAM | 차세대 계정·권한 거버넌스 & Zero-Trust 콘솔</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .bg-slate-950 { background-color: #0b0f19; }
+        .bg-slate-900 { background-color: #111827; }
+        .bg-slate-800 { background-color: #1f2937; }
+        .border-slate-800 { border-color: #1f2937; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-3.5 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-lg text-white tracking-wide">SECURE-IAM</span>
+                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs px-2 py-0.5 rounded font-mono">Enterprise v5.0</span>
+                </div>
+                <p class="text-xs text-slate-400">차세대 계정·권한 거버넌스 & Zero-Trust 오케스트레이션 콘솔</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/50 px-3 py-1.5 rounded-lg text-xs font-mono">
+                <span id="vdbStatusIndicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-slate-300">vDB Storage Engine: <strong class="text-emerald-400">PERSISTENCE ACTIVE</strong></span>
+            </div>
+
+            <button onclick="simulateReboot()" class="bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> 앱 가상 재부팅 (F5 시뮬레이션)
+            </button>
+
+            <button onclick="toggleModal('presentationModal', true)" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md transition flex items-center gap-2">
+                <i class="fa-solid fa-circle-play"></i> 시연/발표 가이드 & 차별성
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 p-4 flex flex-col justify-between shrink-0">
+            <div class="space-y-6">
+                <div>
+                    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">보안 통합 관리 센터</h2>
+                    <nav class="space-y-1">
+                        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-blue-400 bg-blue-600/10 border border-blue-500/20">
+                            <i class="fa-solid fa-chart-pie w-5"></i> 1. 리포트 분석 & 현황
+                        </button>
+                        <button onclick="switchTab('lifecycle')" id="nav-lifecycle" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+                            <i class="fa-solid fa-users-gear w-5"></i> 2. 직원 계정 & 권한 관리
+                        </button>
+                        <button onclick="switchTab('ai-agent')" id="nav-ai-agent" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+                            <i class="fa-solid fa-robot w-5"></i> 3. AI 에이전트 탈퇴 증적
+                        </button>
+                        <button onclick="switchTab('network')" id="nav-network" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+                            <i class="fa-solid fa-network-wired w-5"></i> 4. 외부 IP & Zero-Trust
+                        </button>
+                        <button onclick="switchTab('audit')" id="nav-audit" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+                            <i class="fa-solid fa-file-contract w-5"></i> 5. 감사 보고서 & vDB Inspector
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                    <h3 class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-vial text-purple-400"></i> 시연 모드 샌드박스
+                    </h3>
+                    <div class="space-y-2">
+                        <button onclick="openAddEmployeeModal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs py-2 rounded font-medium transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> + 신규 직원 등록
+                        </button>
+                        <button onclick="triggerExternalAttack()" class="w-full bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-300 text-xs py-2 rounded font-medium transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-bug"></i> [시연] 외부 IP 해킹 시도
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-3 text-xs text-slate-500">
+                <p>System Status: <span class="text-emerald-400">Normal</span></p>
+                <p class="font-mono mt-0.5">DB: LocalStorage Persisted</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 overflow-y-auto space-y-6">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/40 p-6 rounded-xl border border-blue-900/30">
+                    <h1 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-400"></i> 팔로알토 리포트 기반 보안 현황
+                    </h1>
+                    <p class="text-slate-400 text-sm">Unit 42 보고서 기준: 사이버 침해 사고의 90% 이상이 미회수 계정 및 방치된 API Key에서 발생합니다.</p>
+                </div>
+
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">총 관리 계정 수</p>
+                        <p id="metric-total" class="text-2xl font-bold text-white mt-1">0</p>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">정상 재직 계정</p>
+                        <p id="metric-active" class="text-2xl font-bold text-emerald-400 mt-1">0</p>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">퇴사 / 권한 회수완료</p>
+                        <p id="metric-terminated" class="text-2xl font-bold text-rose-400 mt-1">0</p>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">외부 IP 접근 차단 횟수</p>
+                        <p id="metric-blocked" class="text-2xl font-bold text-amber-400 mt-1">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
+                    <h2 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> 미회수 권한 위험성 분석 (기존 IAM vs 당사 솔루션)
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div class="bg-slate-950/60 p-4 rounded-lg border border-rose-900/30">
+                            <h3 class="font-bold text-rose-400 mb-2">기존 IAM/SSO 솔루션의 한계</h3>
+                            <ul class="space-y-2 text-slate-400 list-disc list-inside">
+                                <li>퇴사 시 계정만 정지하고 발급된 API/JWT Key 방치</li>
+                                <li>부서 이동 시 이전 부서의 핵심 접근 권한 유치</li>
+                                <li>API 미지원 앱(Shadow SaaS) 수작업 누락 발생</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-950/60 p-4 rounded-lg border border-emerald-900/30">
+                            <h3 class="font-bold text-emerald-400 mb-2">SECURE-IAM 해결 및 차별성</h3>
+                            <ul class="space-y-2 text-slate-400 list-disc list-inside">
+                                <li>퇴사 및 예약 시간 도달 시 <strong>토큰/키 강제 무효화(Revoke)</strong></li>
+                                <li>부서 이동 시 이전 권한 <strong>자동 회수(Diff 가시화)</strong></li>
+                                <li>AI 에이전트가 <strong>미연동 앱 직접 접속 및 증적 캡처</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: LIFECYCLE -->
+            <section id="tab-lifecycle" class="tab-content hidden space-y-6">
+                <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <div>
+                        <h1 class="text-lg font-bold text-white">직원 계정 및 접근 권한 / 퇴사 타이머 관리</h1>
+                        <p class="text-xs text-slate-400">부서 이동 시 이전 권한 즉시 회수, 예약 퇴사 시간 도달 시 자동 정지, 사내 IP 바인딩 관리</p>
+                    </div>
+                    <button onclick="openAddEmployeeModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> + 신규 직원 등록
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold">
+                            <tr>
+                                <th class="p-3.5">직원 정보</th>
+                                <th class="p-3.5">부서</th>
+                                <th class="p-3.5">바인딩 허용 IP</th>
+                                <th class="p-3.5">연동 애플리케이션 (권한 DIFF)</th>
+                                <th class="p-3.5">발급된 JWT / API 키</th>
+                                <th class="p-3.5">퇴사 예약 타이머</th>
+                                <th class="p-3.5">상태</th>
+                                <th class="p-3.5 text-right">권한 제어 액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody" class="divide-y divide-slate-800 text-slate-300">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: AI AGENT -->
+            <section id="tab-ai-agent" class="tab-content hidden space-y-6">
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-robot text-purple-400"></i> AI 에이전트 자율 탈퇴 & 증적 캡처 (Shadow SaaS)
+                    </h1>
+                    <p class="text-xs text-slate-400 mb-4">공식 API가 없는 외부 포털 및 서드파티 웹사이트도 AI 에이전트가 직접 들어가 멤버를 탈퇴시키고 증적 스크린샷을 생성합니다.</p>
+                    
+                    <button onclick="runAIAgentSimulation()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i> AI 탈퇴 자동화 실행 (네이버 서치어드바이저 / 페이스북 비즈니스)
+                    </button>
+                </div>
+
+                <div id="aiTimeline" class="space-y-4">
+                    <!-- Dynamic Log -->
+                </div>
+            </section>
+
+            <!-- TAB 4: NETWORK -->
+            <section id="tab-network" class="tab-content hidden space-y-6">
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-cat text-rose-400"></i> Zero-Trust 외부 IP 바인딩 및 접속 차단
+                    </h1>
+                    <p class="text-xs text-slate-400 mb-4">허용된 사내 바인딩 IP가 아닌 외부/해외 IP로 접근 시 즉시 차단 처리됩니다.</p>
+
+                    <button onclick="triggerExternalAttack()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-user-ninja"></i> [시연] 비인가 외부 IP 해킹 시도 테스트
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <h2 class="text-sm font-bold text-slate-200 mb-3">실시간 외부 IP 차단 로그</h2>
+                    <div id="blockedIpLogs" class="space-y-2 font-mono text-xs">
+                        <!-- Dynamic Logs -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: AUDIT INSPECTOR -->
+            <section id="tab-audit" class="tab-content hidden space-y-6">
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h1 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-database text-amber-400"></i> 감사 보고서 & vDB Real-Time Inspector
+                    </h1>
+                    <p class="text-xs text-slate-400">브라우저 내부에 영구 저장(Persistence)되어 작동하는 가상 데이터베이스 테이블을 실시간으로 확인합니다.</p>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <h2 class="text-xs font-bold text-amber-400 mb-2 font-mono">TB_EMPLOYEE Table (JSON Storage)</h2>
+                    <pre id="vdbViewer" class="bg-slate-900 p-4 rounded border border-slate-800 text-xs font-mono text-emerald-400 overflow-x-auto max-h-96"></pre>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: OTP -->
+    <div id="otpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div class="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-key"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">2차 보안 OTP 인증</h3>
+                <p class="text-xs text-slate-400 mt-1">권한 회수 및 변경 승인을 위해 6자리 OTP를 입력하세요.</p>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xl font-bold tracking-widest text-emerald-400" id="otpDisplay">
+                000-000
+            </div>
+            <input type="text" id="otpInput" maxlength="6" placeholder="인증번호 6자리 입력" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-center text-white font-mono text-lg focus:outline-none focus:border-blue-500">
+            <div class="flex gap-2">
+                <button onclick="closeOtpModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 rounded font-medium">취소</button>
+                <button onclick="verifyOtp()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs py-2 rounded font-semibold">인증 승인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PRESENTATION / SCRIPT GUIDE -->
+    <div id="presentationModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chalkboard-user text-blue-400"></i> 발표 및 시연 스크립트 가이드
+                </h3>
+                <button onclick="toggleModal('presentationModal', false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-300">
+                <div class="bg-blue-950/30 p-3.5 rounded-lg border border-blue-900/40">
+                    <h4 class="font-bold text-blue-400 mb-1">🎬 시연 1단계: 팔로알토 리포트 기반 기존 솔루션 한계 지적</h4>
+                    <p class="text-slate-400">"Palo Alto Unit 42 사고 대응 보고서에 따르면 사이버 침해의 90% 이상이 계정 및 토큰 미회수에서 발생합니다. 기존 Okta 같은 SSO는 계정만 끌 뿐, 발급된 API/JWT Key와 서드파티 앱 권한을 방치합니다."</p>
+                </div>
+
+                <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                    <h4 class="font-bold text-emerald-400 mb-1">🎬 시연 2단계: 즉시 퇴사 + OTP + F5 앱 가상 재부팅 시연</h4>
+                    <p class="text-slate-400">`직원 계정 & 권한 관리` 탭에서 **[즉시퇴사]** 클릭 ➔ OTP 승인 ➔ **[앱 가상 재부팅]** 클릭 ➔ 새로고침 후에도 퇴사 및 키 회수 상태가 100% 영구 보존됨을 증명합니다.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                    <h4 class="font-bold text-purple-400 mb-1">🎬 시연 3단계: 부서 이동 시 권한 Diff 가시화</h4>
+                    <p class="text-slate-400">**[부서이동]** 클릭 후 마케팅팀 선택 ➔ 이전 부서 전용 키는 취소선으로 회수되고, 새 부서 키만 초록색으로 발급됨을 보여줍니다.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1">🎬 시연 4단계: Shadow SaaS AI 에이전트 자율 탈퇴</h4>
+                    <p class="text-slate-400">`AI 에이전트 탈퇴 증적` 탭에서 실행 ➔ API가 없는 사이트도 AI가 직접 들어가 멤버를 삭제하고 법적 효력을 갖는 스크린샷 캡처 증적을 생성함을 시연합니다.</p>
+                </div>
+            </div>
+
+            <div class="text-right pt-2 border-t border-slate-800">
+                <button onclick="toggleModal('presentationModal', false)" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded font-semibold">닫기 및 시연 시작</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Engine -->
+    <script>
+        const INITIAL_EMPLOYEES = [
+            {
+                id: "EMP-101",
+                name: "이철수",
+                email: "cs_lee@company.com",
+                department: "플랫폼 개발팀",
+                allowedIp: "192.168.1.15",
+                apps: ["Google Workspace", "GitHub", "AWS Portal"],
+                revokedApps: [],
+                jwtKey: "JWT-PROD-DEV-881",
+                status: "ACTIVE", // ACTIVE, TERMINATED
+                scheduledTime: null
+            },
+            {
+                id: "EMP-102",
+                name: "김영희",
+                email: "yh_kim@company.com",
+                department: "마케팅 기획팀",
+                allowedIp: "192.168.1.20",
+                apps: ["Google Workspace", "Slack", "Notion"],
+                revokedApps: [],
+                jwtKey: "Naver-API-KEY-092",
+                status: "ACTIVE",
+                scheduledTime: null
+            }
+        ];
+
+        let pendingAction = null;
+        let currentOtpCode = "";
+
+        // DB Initialization with LocalStorage Persistence
+        function getEmployees() {
+            const data = localStorage.getItem("TB_EMPLOYEE");
+            if (!data) {
+                localStorage.setItem("TB_EMPLOYEE", JSON.stringify(INITIAL_EMPLOYEES));
+                return INITIAL_EMPLOYEES;
+            }
+            return JSON.parse(data);
+        }
+
+        function saveEmployees(data) {
+            localStorage.setItem("TB_EMPLOYEE", JSON.stringify(data));
+            renderAll();
+        }
+
+        function getBlockedIps() {
+            return JSON.parse(localStorage.getItem("TB_BLOCKED_IPS") || "[]");
+        }
+
+        function addBlockedIp(ip, reason) {
+            const logs = getBlockedIps();
+            logs.unshift({ ip, reason, time: new Date().toLocaleTimeString() });
+            localStorage.setItem("TB_BLOCKED_IPS", JSON.stringify(logs));
+            renderAll();
+        }
+
+        // Tab Switching Engine
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('active', 'text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+                el.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('active', 'text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+            }
+        }
+
+        // Render Functions
+        function renderAll() {
+            const employees = getEmployees();
+            
+            // Metrics
+            document.getElementById('metric-total').innerText = employees.length;
+            document.getElementById('metric-active').innerText = employees.filter(e => e.status === 'ACTIVE').length;
+            document.getElementById('metric-terminated').innerText = employees.filter(e => e.status === 'TERMINATED').length;
+            document.getElementById('metric-blocked').innerText = getBlockedIps().length;
+
+            // Employee Table
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = employees.map(emp => `
+                <tr class="hover:bg-slate-800/30">
+                    <td class="p-3.5">
+                        <div class="font-bold text-white">${emp.name}</div>
+                        <div class="text-[10px] text-slate-500">${emp.email}</div>
+                    </td>
+                    <td class="p-3.5">${emp.department}</td>
+                    <td class="p-3.5 font-mono text-blue-400">${emp.allowedIp}</td>
+                    <td class="p-3.5">
+                        <div class="flex flex-wrap gap-1">
+                            ${emp.apps.map(a => `<span class="bg-slate-800 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px]">${a}</span>`).join('')}
+                            ${emp.revokedApps.map(a => `<span class="bg-rose-950/40 text-rose-400 border border-rose-800/40 px-1.5 py-0.5 rounded text-[10px] line-through">${a} (회수됨)</span>`).join('')}
+                        </div>
+                    </td>
+                    <td class="p-3.5 font-mono">
+                        ${emp.status === 'TERMINATED' 
+                            ? `<span class="text-rose-500 font-bold">REVOKED</span>`
+                            : `<span class="text-amber-400 bg-amber-950/30 px-1.5 py-0.5 rounded border border-amber-800/40">${emp.jwtKey}</span>`}
+                    </td>
+                    <td class="p-3.5 text-[11px] text-slate-400">${emp.scheduledTime || '미설정'}</td>
+                    <td class="p-3.5">
+                        ${emp.status === 'ACTIVE'
+                            ? `<span class="bg-emerald-950/50 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded text-[10px] font-bold">정상 재직</span>`
+                            : `<span class="bg-rose-950/50 text-rose-400 border border-rose-800/50 px-2 py-0.5 rounded text-[10px] font-bold">퇴사 (계정 정지)</span>`}
+                    </td>
+                    <td class="p-3.5 text-right space-x-1">
+                        ${emp.status === 'ACTIVE' ? `
+                            <button onclick="triggerOtpAction('TRANSFER', '${emp.id}')" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-2 py-1 rounded text-[10px]">부서이동</button>
+                            <button onclick="triggerOtpAction('TERMINATE', '${emp.id}')" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 px-2 py-1 rounded text-[10px]">즉시퇴사</button>
+                        ` : `
+                            <button onclick="triggerOtpAction('RESTORE', '${emp.id}')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-[10px]">권한 복구</button>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Inspector JSON
+            document.getElementById('vdbViewer').innerText = JSON.stringify(employees, null, 2);
+
+            // Blocked Logs
+            const blockedLogs = getBlockedIps();
+            document.getElementById('blockedIpLogs').innerHTML = blockedLogs.length === 0
+                ? `<p class="text-slate-500 text-xs">차단 기록이 없습니다.</p>`
+                : blockedLogs.map(l => `
+                    <div class="bg-rose-950/20 border border-rose-900/30 p-2 rounded flex justify-between text-rose-300">
+                        <span><i class="fa-solid fa-ban"></i> [ACCESS DENIED] IP: ${l.ip} (${l.reason})</span>
+                        <span class="text-slate-500">${l.time}</span>
+                    </div>
+                `).join('');
+        }
+
+        // OTP & Action Processing
+        function triggerOtpAction(actionType, empId) {
+            pendingAction = { type: actionType, id: empId };
+            currentOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+            document.getElementById('otpDisplay').innerText = `${currentOtpCode.slice(0, 3)}-${currentOtpCode.slice(3)}`;
+            document.getElementById('otpInput').value = '';
+            toggleModal('otpModal', true);
+        }
+
+        function verifyOtp() {
+            const input = document.getElementById('otpInput').value.trim();
+            if (input === currentOtpCode) {
+                executeAction(pendingAction);
+                closeOtpModal();
+            } else {
+                alert("OTP 인증번호가 올바르지 않습니다. (화면에 표시된 번호를 입력하세요)");
+            }
+        }
+
+        function closeOtpModal() {
+            toggleModal('otpModal', false);
+            pendingAction = null;
+        }
+
+        function executeAction(action) {
+            let employees = getEmployees();
+            const emp = employees.find(e => e.id === action.id);
+
+            if (action.type === 'TERMINATE') {
+                emp.status = 'TERMINATED';
+                emp.revokedApps = [...emp.apps];
+                emp.apps = [];
+                alert(`${emp.name} 직원의 계정이 정지되고 모든 권한이 강제 회수되었습니다.`);
+            } else if (action.type === 'TRANSFER') {
+                emp.revokedApps = [...emp.apps];
+                emp.department = "마케팅 기획팀";
+                emp.apps = ["Google Workspace", "Slack", "마케팅 전용 툴"];
+                emp.jwtKey = "JWT-KEY-[마케팅기획팀]";
+                alert(`${emp.name} 직원이 마케팅 기획팀으로 이동되어 이전 개발 권한이 자동 회수되고 새 권한이 부여되었습니다.`);
+            } else if (action.type === 'RESTORE') {
+                emp.status = 'ACTIVE';
+                emp.apps = ["Google Workspace"];
+                emp.revokedApps = [];
+                emp.jwtKey = "JWT-RESTORED-KEY";
+                alert(`${emp.name} 직원의 권한이 안전하게 재부여되었습니다.`);
+            }
+
+            saveEmployees(employees);
+        }
+
+        // Virtual Reboot Simulation
+        function simulateReboot() {
+            const indicator = document.getElementById('vdbStatusIndicator');
+            indicator.classList.remove('bg-emerald-500');
+            indicator.classList.add('bg-amber-500');
+
+            setTimeout(() => {
+                indicator.classList.remove('bg-amber-500');
+                indicator.classList.add('bg-emerald-500');
+                renderAll();
+                alert("앱 가상 재부팅이 완료되었습니다.\n\n[검증 결과] 로컬스토리지 DB 엔진에 의해 기존 퇴사 처리 및 권한 회수 상태가 초기화되지 않고 영구 보존되었습니다!");
+            }, 600);
+        }
+
+        // AI Agent Simulation
+        function runAIAgentSimulation() {
+            const timeline = document.getElementById('aiTimeline');
+            timeline.innerHTML = `
+                <div class="bg-slate-900 p-4 rounded-xl border border-purple-900/40 space-y-2">
+                    <p class="text-xs text-purple-400 font-bold"><i class="fa-solid fa-spinner animate-spin"></i> AI 에이전트가 API 미연동 웹사이트에 접속 중입니다...</p>
+                    <div class="text-[11px] font-mono text-slate-400 bg-slate-950 p-2 rounded border border-slate-800">
+                        > Launching Headless Chrome Browser...<br>
+                        > Navigating to https://searchadvisor.naver.com/members...<br>
+                        > Locating User 'yh_kim@company.com'...<br>
+                        > Clicking 'Revoke Admin Access' Button...<br>
+                        > Capturing Screen Evidence [evidence_20261020.png]...
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                timeline.innerHTML += `
+                    <div class="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-xl text-xs space-y-2">
+                        <p class="font-bold text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> AI 자율 탈퇴 완료 및 증적 스크린샷 적재 성공
+                        </p>
+                        <div class="bg-slate-950 p-3 rounded border border-slate-800 flex items-center justify-between">
+                            <span class="font-mono text-slate-300">증적 파일: EVIDENCE_NAVER_SEARCHADVISOR_LOG.png</span>
+                            <span class="text-emerald-400 font-bold">감사 보고서 적재완료</span>
+                        </div>
+                    </div>
+                `;
+            }, 1200);
+        }
+
+        function triggerExternalAttack() {
+            addBlockedIp("185.220.101.5", "해외 Tor 악성 VPN 접근 시도");
+            switchTab('network');
+            alert("[SECURITY ALERT] 비인가 외부 IP (185.220.101.5) 접근 시도가 감지되어 Zero-Trust 엔진에 의해 차단되었습니다.");
+        }
+
+        function openAddEmployeeModal() {
+            const name = prompt("직원 이름을 입력하세요:", "박민수");
+            if (!name) return;
+            const employees = getEmployees();
+            employees.push({
+                id: `EMP-${Date.now().toString().slice(-3)}`,
+                name: name,
+                email: `${name}@company.com`,
+                department: "인프라 보안팀",
+                allowedIp: "192.168.1.99",
+                apps: ["Google Workspace", "AWS Security"],
+                revokedApps: [],
+                jwtKey: "JWT-SEC-KEY-999",
+                status: "ACTIVE",
+                scheduledTime: null
+            });
+            saveEmployees(employees);
+        }
+
+        function toggleModal(id, show) {
+            document.getElementById(id).classList.toggle('hidden', !show);
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
